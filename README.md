@@ -37,6 +37,7 @@
 
 ### 业务特性
 
+- 业务代码生成器（支持自动生成 Service、Controller、数据模型代码）
 - Spring Session Redis 分布式登录
 - 全局请求响应拦截器（记录日志）
 - 全局异常处理器
@@ -162,3 +163,19 @@ PUT post_v1
 // todo 取消注释开启任务
 //@Component
 ```
+
+### 业务代码生成器
+
+支持自动生成 Service、Controller、数据模型代码，配合 MyBatisX 插件，可以快速开发增删改查等实用基础功能。
+
+找到 `generate.CodeGenerator` 类，修改生成参数和生成路径，并且支持注释掉不需要的生成逻辑，然后运行即可。
+
+```
+// 指定生成参数
+String packageName = "com.yupi.springbootinit";
+String dataName = "用户评论";
+String dataKey = "userComment";
+String upperDataKey = "UserComment";
+```
+
+生成代码后，可以移动到实际项目中，并且按照 `// todo` 注释的提示来针对自己的业务需求进行修改。
