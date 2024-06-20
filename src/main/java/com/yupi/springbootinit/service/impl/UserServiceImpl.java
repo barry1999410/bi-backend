@@ -1,7 +1,5 @@
 package com.yupi.springbootinit.service.impl;
 
-import static com.yupi.springbootinit.constant.UserConstant.USER_LOGIN_STATE;
-
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -15,17 +13,22 @@ import com.yupi.springbootinit.model.enums.UserRoleEnum;
 import com.yupi.springbootinit.model.vo.LoginUserVO;
 import com.yupi.springbootinit.model.vo.UserVO;
 import com.yupi.springbootinit.service.UserService;
+import com.yupi.springbootinit.utils.SmsCodeUtils;
 import com.yupi.springbootinit.utils.SqlUtils;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.yupi.springbootinit.constant.UserConstant.DEFAULT_USERNAME;
+import static com.yupi.springbootinit.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户服务实现
@@ -81,7 +84,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+    public LoginUserVO userLogin(String userAccount, String userPassword , HttpServletRequest request) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -109,37 +112,69 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return this.getLoginUserVO(user);
     }
 
+    @Resource
+    private SmsCodeUtils smsCodeUtils;
     @Override
-    public LoginUserVO userLoginByMpOpen(WxOAuth2UserInfo wxOAuth2UserInfo, HttpServletRequest request) {
-        String unionId = wxOAuth2UserInfo.getUnionId();
-        String mpOpenId = wxOAuth2UserInfo.getOpenid();
-        // 单机锁
-        synchronized (unionId.intern()) {
-            // 查询用户是否已存在
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("unionId", unionId);
-            User user = this.getOne(queryWrapper);
-            // 被封号，禁止登录
-            if (user != null && UserRoleEnum.BAN.getValue().equals(user.getUserRole())) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "该用户已被封，禁止登录");
-            }
-            // 用户不存在则创建
-            if (user == null) {
-                user = new User();
-                user.setUnionId(unionId);
-                user.setMpOpenId(mpOpenId);
-                user.setUserAvatar(wxOAuth2UserInfo.getHeadImgUrl());
-                user.setUserName(wxOAuth2UserInfo.getNickname());
-                boolean result = this.save(user);
-                if (!result) {
-                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败");
-                }
-            }
-            // 记录用户的登录态
-            request.getSession().setAttribute(USER_LOGIN_STATE, user);
-            return getLoginUserVO(user);
+    public LoginUserVO phoneLogin(String captcha, String phone , HttpServletRequest request) {
+        // 1. 校验
+        if (StringUtils.isAnyBlank(captcha, phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
+        //根据电话获取验证码
+        Boolean codeAndCheck = smsCodeUtils.getVerificationCodeAndCheck(phone, captcha);
+        if (!codeAndCheck){
+            throw  new BusinessException(ErrorCode.SYSTEM_ERROR,"验证码错误");
+        }
+        // 查询用户是否存在
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userPhone", phone);
+        User user = this.baseMapper.selectOne(queryWrapper);
+        // 用户不存在
+        if (user == null) {
+            User userByPhone = new User();
+            userByPhone.setUserName(DEFAULT_USERNAME);
+            userByPhone.setUserPhone(phone);
+            userByPhone.setUserAccount(phone);
+            userByPhone.setUserAvatar(null);
+            userByPhone.setUserPassword(phone);
+            this.save(userByPhone);
+        }
+        // 3. 记录用户的登录态
+        request.getSession().setAttribute(USER_LOGIN_STATE, user);
+        return this.getLoginUserVO(user);
     }
+
+    // @Override
+    // public LoginUserVO userLoginByMpOpen(WxOAuth2UserInfo wxOAuth2UserInfo, HttpServletRequest request) {
+    //     String unionId = wxOAuth2UserInfo.getUnionId();
+    //     String mpOpenId = wxOAuth2UserInfo.getOpenid();
+    //     // 单机锁
+    //     synchronized (unionId.intern()) {
+    //         // 查询用户是否已存在
+    //         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+    //         queryWrapper.eq("unionId", unionId);
+    //         User user = this.getOne(queryWrapper);
+    //         // 被封号，禁止登录
+    //         if (user != null && UserRoleEnum.BAN.getValue().equals(user.getUserRole())) {
+    //             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "该用户已被封，禁止登录");
+    //         }
+    //         // 用户不存在则创建
+    //         if (user == null) {
+    //             user = new User();
+    //             user.setUnionId(unionId);
+    //             user.setMpOpenId(mpOpenId);
+    //             user.setUserAvatar(wxOAuth2UserInfo.getHeadImgUrl());
+    //             user.setUserName(wxOAuth2UserInfo.getNickname());
+    //             boolean result = this.save(user);
+    //             if (!result) {
+    //                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败");
+    //             }
+    //         }
+    //         // 记录用户的登录态
+    //         request.getSession().setAttribute(USER_LOGIN_STATE, user);
+    //         return getLoginUserVO(user);
+    //     }
+    // }
 
     /**
      * 获取当前登录用户

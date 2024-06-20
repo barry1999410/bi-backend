@@ -6,9 +6,9 @@ import com.yupi.springbootinit.model.dto.user.UserQueryRequest;
 import com.yupi.springbootinit.model.entity.User;
 import com.yupi.springbootinit.model.vo.LoginUserVO;
 import com.yupi.springbootinit.model.vo.UserVO;
-import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
-import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
+import java.util.List;
 
 /**
  * 用户服务
@@ -29,7 +29,7 @@ public interface UserService extends IService<User> {
     long userRegister(String userAccount, String userPassword, String checkPassword);
 
     /**
-     * 用户登录
+     * 用户账号密码登录
      *
      * @param userAccount  用户账户
      * @param userPassword 用户密码
@@ -39,13 +39,23 @@ public interface UserService extends IService<User> {
     LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
     /**
+     * 用户手机号登录
+     *
+     * @param captcha  验证码
+     * @param phone 电话
+     * @param request
+     * @return 脱敏后的用户信息
+     */
+    LoginUserVO phoneLogin(String captcha, String phone, HttpServletRequest request);
+
+    /**
      * 用户登录（微信开放平台）
      *
      * @param wxOAuth2UserInfo 从微信获取的用户信息
      * @param request
      * @return 脱敏后的用户信息
      */
-    LoginUserVO userLoginByMpOpen(WxOAuth2UserInfo wxOAuth2UserInfo, HttpServletRequest request);
+    // LoginUserVO userLoginByMpOpen(WxOAuth2UserInfo wxOAuth2UserInfo, HttpServletRequest request);
 
     /**
      * 获取当前登录用户

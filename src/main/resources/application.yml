@@ -3,7 +3,7 @@
 # @from <a href="https://yupi.icu">编程导航知识星球</a>
 spring:
   application:
-    name: springboot-init
+    name: autoBi
   # 默认 dev 环境
   profiles:
     active: dev
@@ -21,17 +21,16 @@ spring:
   # todo 需替换配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/my_db
+    url: jdbc:mysql://localhost:3306/auto_bi
     username: root
-    password: 123456
+    password: root
   # Redis 配置
   # todo 需替换配置，然后取消注释
-#  redis:
-#    database: 1
-#    host: localhost
-#    port: 6379
-#    timeout: 5000
-#    password: 123456
+  redis:
+    database: 1
+    host: localhost
+    port: 6379
+    timeout: 5000
   # Elasticsearch 配置
   # todo 需替换配置，然后取消注释
 #  elasticsearch:
@@ -43,6 +42,11 @@ spring:
     multipart:
       # 大小限制
       max-file-size: 10MB
+  rabbitmq:
+    host: localhost
+    port: 5672
+    password: guest
+    username: guest
 server:
   address: 0.0.0.0
   port: 8101
@@ -52,6 +56,11 @@ server:
     session:
       cookie:
         max-age: 2592000
+#sms服务
+aliyun:
+    AccessKeyId: LTAI5tPUiNv3mxCmfA71zCEh
+    AccessKeySecret: JnwBYoQu1nJSa3mr1T4vkmsn6kPMEl
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false

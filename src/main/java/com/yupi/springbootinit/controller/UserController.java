@@ -10,35 +10,20 @@ import com.yupi.springbootinit.config.WxOpenConfig;
 import com.yupi.springbootinit.constant.UserConstant;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
-import com.yupi.springbootinit.model.dto.user.UserAddRequest;
-import com.yupi.springbootinit.model.dto.user.UserLoginRequest;
-import com.yupi.springbootinit.model.dto.user.UserQueryRequest;
-import com.yupi.springbootinit.model.dto.user.UserRegisterRequest;
-import com.yupi.springbootinit.model.dto.user.UserUpdateMyRequest;
-import com.yupi.springbootinit.model.dto.user.UserUpdateRequest;
+import com.yupi.springbootinit.model.dto.user.*;
 import com.yupi.springbootinit.model.entity.User;
 import com.yupi.springbootinit.model.vo.LoginUserVO;
 import com.yupi.springbootinit.model.vo.UserVO;
 import com.yupi.springbootinit.service.UserService;
-
-import java.util.List;
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import lombok.extern.slf4j.Slf4j;
-import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
-import me.chanjar.weixin.common.bean.oauth2.WxOAuth2AccessToken;
-import me.chanjar.weixin.mp.api.WxMpService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import static com.yupi.springbootinit.service.impl.UserServiceImpl.SALT;
 
@@ -50,6 +35,7 @@ import static com.yupi.springbootinit.service.impl.UserServiceImpl.SALT;
  */
 @RestController
 @RequestMapping("/user")
+// @CrossOrigin( origins = "http://localhost:8001",allowCredentials = "true")
 @Slf4j
 public class UserController {
 
@@ -96,35 +82,39 @@ public class UserController {
         }
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
-        if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        String captcha = userLoginRequest.getCaptcha();
+        String userPhone = userLoginRequest.getPhone();
+        //用户为账号密码登录
+        if (StringUtils.isAnyBlank(captcha, userPhone)) {
+            LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+            return ResultUtils.success(loginUserVO);
         }
-        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        LoginUserVO loginUserVO = userService.phoneLogin(captcha, userPhone, request);
         return ResultUtils.success(loginUserVO);
     }
 
     /**
      * 用户登录（微信开放平台）
      */
-    @GetMapping("/login/wx_open")
-    public BaseResponse<LoginUserVO> userLoginByWxOpen(HttpServletRequest request, HttpServletResponse response,
-            @RequestParam("code") String code) {
-        WxOAuth2AccessToken accessToken;
-        try {
-            WxMpService wxService = wxOpenConfig.getWxMpService();
-            accessToken = wxService.getOAuth2Service().getAccessToken(code);
-            WxOAuth2UserInfo userInfo = wxService.getOAuth2Service().getUserInfo(accessToken, code);
-            String unionId = userInfo.getUnionId();
-            String mpOpenId = userInfo.getOpenid();
-            if (StringUtils.isAnyBlank(unionId, mpOpenId)) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败，系统错误");
-            }
-            return ResultUtils.success(userService.userLoginByMpOpen(userInfo, request));
-        } catch (Exception e) {
-            log.error("userLoginByWxOpen error", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败，系统错误");
-        }
-    }
+    // @GetMapping("/login/wx_open")
+    // public BaseResponse<LoginUserVO> userLoginByWxOpen(HttpServletRequest request, HttpServletResponse response,
+    //         @RequestParam("code") String code) {
+    //     WxOAuth2AccessToken accessToken;
+    //     try {
+    //         WxMpService wxService = wxOpenConfig.getWxMpService();
+    //         accessToken = wxService.getOAuth2Service().getAccessToken(code);
+    //         WxOAuth2UserInfo userInfo = wxService.getOAuth2Service().getUserInfo(accessToken, code);
+    //         String unionId = userInfo.getUnionId();
+    //         String mpOpenId = userInfo.getOpenid();
+    //         if (StringUtils.isAnyBlank(unionId, mpOpenId)) {
+    //             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败，系统错误");
+    //         }
+    //         return ResultUtils.success(userService.userLoginByMpOpen(userInfo, request));
+    //     } catch (Exception e) {
+    //         log.error("userLoginByWxOpen error", e);
+    //         throw new BusinessException(ErrorCode.SYSTEM_ERROR, "登录失败，系统错误");
+    //     }
+    // }
 
     /**
      * 用户注销

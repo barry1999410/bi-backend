@@ -30,5 +30,9 @@ public interface UserConstant {
      */
     String BAN_ROLE = "ban";
 
+    /**
+     * 默认用户名
+     */
+    String DEFAULT_USERNAME = "用户";
     // endregion
 }

@@ -3,10 +3,41 @@
 # @from <a href="https://yupi.icu">编程导航知识星球</a>
 
 -- 创建库
-create database if not exists my_db;
+create database if not exists auto_bi;
 
 -- 切换库
-use my_db;
+use auto_bi;
+
+create table if not exists user
+(
+    id          bigint auto_increment comment 'id'
+        primary key,
+    username    varchar(256)                       null comment '用户昵称',
+    userAccount varchar(256)                       null comment '用户账号',
+    userAvatar  varchar(1024)                      null comment '头像',
+    usrPassword varchar(512)                       not null comment '用户密码',
+    createTime  datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    updateTime  datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete    tinyint  default 0                 null comment '0 无删除 1删除',
+    userRole    int      default 0                 not null comment '用户角色: 0 普通用户 1 管理员',
+    index idx_userAccount (userAccount)
+) comment '用户' collate=utf8mb4_unicode_ci ;
+
+
+-- chart表
+create table auto_bi
+(
+    id          bigint auto_increment comment 'id'
+        primary key,
+    goal text null comment  '分析目标',
+    chartData text null comment  '图表数据',
+    chartType varchar(128) null comment  '图表类型',
+    genChart text null comment  '生成的图表信息',
+    genResult text null comment  '生成的图表信息',
+    createTime  datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    updateTime  datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete    tinyint  default 0                 null comment '0 无删除 1删除'
+) comment '图表信息表' collate =utf8mb4_unicode_ci;
 
 -- 用户表
 create table if not exists user
